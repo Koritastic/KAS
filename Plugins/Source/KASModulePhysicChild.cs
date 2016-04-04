@@ -21,12 +21,12 @@ namespace KAS
         KAS_Shared.DebugLog("Start(PhysicChild)");
         if (!physicActive)
         {
-            physicObj.AddComponent<Rigidbody>();
-            physicObj.rigidbody.mass = mass;
+            var rb = physicObj.AddComponent<Rigidbody>();
+            rb.mass = mass;
             physicObj.transform.parent = null;
-            physicObj.rigidbody.useGravity = true;
-            physicObj.rigidbody.velocity = this.part.rigidbody.velocity;
-            physicObj.rigidbody.angularVelocity = this.part.rigidbody.angularVelocity;
+            rb.useGravity = true;
+            rb.velocity = this.part.rb.velocity;
+            rb.angularVelocity = this.part.rb.angularVelocity;
             FlightGlobals.addPhysicalObject(physicObj);
             physicActive = true;
         }
@@ -44,7 +44,7 @@ namespace KAS
             currentLocalPos = KAS_Shared.GetLocalPosFrom(physicObj.transform, this.part.transform);
             currentLocalRot = KAS_Shared.GetLocalRotFrom(physicObj.transform, this.part.transform);
             FlightGlobals.removePhysicalObject(physicObj);
-            physicObj.rigidbody.isKinematic = true;
+            physicObj.GetComponent<Rigidbody>().isKinematic = true;
             physicObj.transform.parent = this.part.transform;
             StartCoroutine(WaitPhysicUpdate());
         }
@@ -54,12 +54,14 @@ namespace KAS
     {
         if (physicActive)
         {
-            if (physicObj.rigidbody.isKinematic)
+			Rigidbody rb = null;
+			physicObj.GetComponentCached<Rigidbody>(ref rb);
+            if (rb.isKinematic)
             {
                 KAS_Shared.DebugLog("OnPartUnpack(PhysicChild)");
                 physicObj.transform.parent = null;
                 KAS_Shared.SetPartLocalPosRotFrom(physicObj.transform, this.part.transform, currentLocalPos, currentLocalRot);
-                physicObj.rigidbody.isKinematic = false;
+                rb.isKinematic = false;
                 FlightGlobals.addPhysicalObject(physicObj);
                 StartCoroutine(WaitPhysicUpdate());
             }
@@ -70,11 +72,13 @@ namespace KAS
     {
         yield return new WaitForFixedUpdate();
         KAS_Shared.SetPartLocalPosRotFrom(physicObj.transform, this.part.transform, currentLocalPos, currentLocalRot);
-        if (physicObj.rigidbody.isKinematic == false)
+		Rigidbody rb = null;
+		physicObj.GetComponentCached<Rigidbody>(ref rb);
+		if (rb.isKinematic == false)
         {
-            KAS_Shared.DebugLog("WaitPhysicUpdate(PhysicChild) Set velocity to : " + this.part.rigidbody.velocity + " | angular velocity : " + this.part.rigidbody.angularVelocity);
-            physicObj.rigidbody.angularVelocity = this.part.rigidbody.angularVelocity;
-            physicObj.rigidbody.velocity = this.part.rigidbody.velocity;
+            KAS_Shared.DebugLog("WaitPhysicUpdate(PhysicChild) Set velocity to : " + this.part.rb.velocity + " | angular velocity : " + this.part.rb.angularVelocity);
+            rb.angularVelocity = this.part.rb.angularVelocity;
+            rb.velocity = this.part.rb.velocity;
         }
     }
 
@@ -84,7 +88,7 @@ namespace KAS
         if (physicActive)
         {
             FlightGlobals.removePhysicalObject(physicObj);
-            UnityEngine.Object.Destroy(physicObj.rigidbody);
+            UnityEngine.Object.Destroy(physicObj.GetComponent<Rigidbody>());
             physicObj.transform.parent = this.part.transform;
             physicActive = false;
         }
